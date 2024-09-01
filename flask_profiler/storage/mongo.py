@@ -246,8 +246,15 @@ class Mongo(BaseStorage):
 
     def clearify(self, obj):
         available_types = [int, dict, str, list]
-        obj["startedAt"] = obj["startedAt"].strftime("%s")
-        obj["endedAt"] = obj["endedAt"].strftime("%s")
+        for key in ["startedAt", "endedAt"]:
+        if isinstance(obj[key], datetime):
+            obj[key] = int(obj[key].timestamp())
+        elif isinstance(obj[key], str):
+            # If it's already a string, assume it's already processed
+            pass
+        else:
+            # If it's neither datetime nor string, convert to string
+            obj[key] = str(obj[key])
         for k, v in list(obj.items()):
             if any([isinstance(v, av_type) for av_type in available_types]):
                 continue
