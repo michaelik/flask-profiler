@@ -35,50 +35,43 @@ class Mongo(BaseStorage):
         createIndex()
 
     def filter(self, filtering={}):
-        query = {}
-        limit = int(filtering.get('limit', 100000))
-        skip = int(filtering.get('skip', 0))
-        sort = filtering.get('sort', "endedAt,desc").split(",")
+    query = {}
+    limit = int(filtering.get('limit', 100000))
+    skip = int(filtering.get('skip', 0))
+    sort = filtering.get('sort', "endedAt,desc").split(",")
 
-        startedAt = datetime.datetime.fromtimestamp(float(
-            filtering.get('startedAt', time.time() - 3600 * 24 * 7)))
-        endedAt = datetime.datetime.fromtimestamp(
-            float(filtering.get('endedAt', time.time())))
-        elapsed = float(filtering.get('elapsed', 0))
-        name = filtering.get('name', None)
-        method = filtering.get('method', None)
-        args = filtering.get('args', None)
-        kwargs = filtering.get('kwargs', None)
+    startedAt = datetime.datetime.fromtimestamp(float(
+        filtering.get('startedAt', time.time() - 3600 * 24 * 7)))
+    endedAt = datetime.datetime.fromtimestamp(
+        float(filtering.get('endedAt', time.time())))
+    elapsed = float(filtering.get('elapsed', 0))
+    name = filtering.get('name')
+    method = filtering.get('method')
+    args = filtering.get('args')
+    kwargs = filtering.get('kwargs')
 
-        if sort[1] == "desc":
-            sort_dir = pymongo.DESCENDING
-        else:
-            sort_dir = pymongo.ASCENDING
+    sort_dir = pymongo.DESCENDING if sort[1] == "desc" else pymongo.ASCENDING
 
-        if name:
-            query['name'] = name
-        if method:
-            query['method'] = method
-        if endedAt:
-            query['endedAt'] = {"$lte": endedAt}
-        if startedAt:
-            query['startedAt'] = {"$gt": startedAt}
-        if elapsed:
-            query['elapsed'] = {"$gte": elapsed}
-        if args:
-            query['args'] = args
-        if kwargs:
-            query['kwargs'] = kwargs
+    if name:
+        query['name'] = name
+    if method:
+        query['method'] = method
+    if endedAt:
+        query['endedAt'] = {"$lte": endedAt}
+    if startedAt:
+        query['startedAt'] = {"$gt": startedAt}
+    if elapsed:
+        query['elapsed'] = {"$gte": elapsed}
+    if args:
+        query['args'] = args
+    if kwargs:
+        query['kwargs'] = kwargs
 
-        if limit:
-            cursor = self.collection.find(
-                query
-                ).sort(sort[0], sort_dir).skip(skip)
-        else:
-            cursor = self.collection.find(
-                query
-                ).sort(sort[0], sort_dir).skip(skip).limit(limit)
-        return (self.clearify(record) for record in cursor)
+    cursor = self.collection.find(query).sort(sort[0], sort_dir).skip(skip)
+    if limit:
+        cursor = cursor.limit(limit)
+
+    return (self.clearify(record) for record in cursor)
 
     def insert(self, measurement):
         measurement["startedAt"] = datetime.datetime.fromtimestamp(
@@ -246,15 +239,14 @@ class Mongo(BaseStorage):
 
     def clearify(self, obj):
         available_types = (int, float, dict, str, list)
+        
         for key in ["startedAt", "endedAt"]:
-            if isinstance(obj[key], datetime):
-                obj[key] = int(obj[key].timestamp())
-            elif isinstance(obj[key], str):
-                # If it's already a string, assume it's already processed
-                pass
-            else:
-                # If it's neither datetime nor string, convert to string
-                obj[key] = str(obj[key])
+            if key in obj:
+                if isinstance(obj[key], datetime.datetime):
+                    obj[key] = int(obj[key].timestamp())
+                elif not isinstance(obj[key], str):
+                    obj[key] = str(obj[key])
+                
         for k, v in list(obj.items()):
             if isinstance(v, available_types):
                 continue
@@ -263,6 +255,7 @@ class Mongo(BaseStorage):
                 obj.pop("_id")
             else:
                 obj[k] = str(v)
+                
         return obj
 
     def get(self, measurementId):
