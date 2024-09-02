@@ -245,7 +245,7 @@ class Mongo(BaseStorage):
         return series
 
     def clearify(self, obj):
-        available_types = [int, dict, str, list]
+        available_types = (int, float, dict, str, list)
         for key in ["startedAt", "endedAt"]:
             if isinstance(obj[key], datetime):
                 obj[key] = int(obj[key].timestamp())
@@ -256,12 +256,13 @@ class Mongo(BaseStorage):
                 # If it's neither datetime nor string, convert to string
                 obj[key] = str(obj[key])
         for k, v in list(obj.items()):
-            if any([isinstance(v, av_type) for av_type in available_types]):
+            if isinstance(v, available_types):
                 continue
             if k == "_id":
-                k = "id"
+                obj["id"] = str(v)
                 obj.pop("_id")
-            obj[k] = str(v)
+            else:
+                obj[k] = str(v)
         return obj
 
     def get(self, measurementId):
