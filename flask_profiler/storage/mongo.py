@@ -35,43 +35,43 @@ class Mongo(BaseStorage):
         createIndex()
 
     def filter(self, filtering={}):
-    query = {}
-    limit = int(filtering.get('limit', 100000))
-    skip = int(filtering.get('skip', 0))
-    sort = filtering.get('sort', "endedAt,desc").split(",")
-
-    startedAt = datetime.datetime.fromtimestamp(float(
-        filtering.get('startedAt', time.time() - 3600 * 24 * 7)))
-    endedAt = datetime.datetime.fromtimestamp(
-        float(filtering.get('endedAt', time.time())))
-    elapsed = float(filtering.get('elapsed', 0))
-    name = filtering.get('name')
-    method = filtering.get('method')
-    args = filtering.get('args')
-    kwargs = filtering.get('kwargs')
-
-    sort_dir = pymongo.DESCENDING if sort[1] == "desc" else pymongo.ASCENDING
-
-    if name:
-        query['name'] = name
-    if method:
-        query['method'] = method
-    if endedAt:
-        query['endedAt'] = {"$lte": endedAt}
-    if startedAt:
-        query['startedAt'] = {"$gt": startedAt}
-    if elapsed:
-        query['elapsed'] = {"$gte": elapsed}
-    if args:
-        query['args'] = args
-    if kwargs:
-        query['kwargs'] = kwargs
-
-    cursor = self.collection.find(query).sort(sort[0], sort_dir).skip(skip)
-    if limit:
-        cursor = cursor.limit(limit)
-
-    return (self.clearify(record) for record in cursor)
+        query = {}
+        limit = int(filtering.get('limit', 100000))
+        skip = int(filtering.get('skip', 0))
+        sort = filtering.get('sort', "endedAt,desc").split(",")
+    
+        startedAt = datetime.datetime.fromtimestamp(float(
+            filtering.get('startedAt', time.time() - 3600 * 24 * 7)))
+        endedAt = datetime.datetime.fromtimestamp(
+            float(filtering.get('endedAt', time.time())))
+        elapsed = float(filtering.get('elapsed', 0))
+        name = filtering.get('name')
+        method = filtering.get('method')
+        args = filtering.get('args')
+        kwargs = filtering.get('kwargs')
+    
+        sort_dir = pymongo.DESCENDING if sort[1] == "desc" else pymongo.ASCENDING
+    
+        if name:
+            query['name'] = name
+        if method:
+            query['method'] = method
+        if endedAt:
+            query['endedAt'] = {"$lte": endedAt}
+        if startedAt:
+            query['startedAt'] = {"$gt": startedAt}
+        if elapsed:
+            query['elapsed'] = {"$gte": elapsed}
+        if args:
+            query['args'] = args
+        if kwargs:
+            query['kwargs'] = kwargs
+    
+        cursor = self.collection.find(query).sort(sort[0], sort_dir).skip(skip)
+        if limit:
+            cursor = cursor.limit(limit)
+    
+        return (self.clearify(record) for record in cursor)
 
     def insert(self, measurement):
         measurement["startedAt"] = datetime.datetime.fromtimestamp(
